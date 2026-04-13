@@ -1,7 +1,7 @@
 import io
 import os
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple, Any
 
 import cv2
 import numpy as np
@@ -14,10 +14,6 @@ from tensorflow.keras.preprocessing import image as keras_image  # type: ignore
 
 from app.core.config import HEATMAP_DIR, IMAGE_SIZE, MODEL_PATH, MODEL_VERSION
 from app.db.models import Patient, PredictionRecord
-
-model = None
-last_conv_layer_name: Optional[str] = None
-
 
 def find_last_conv_layer(mdl) -> Optional[str]:
     """Scan the model (including nested models) for the last Conv2D layer."""
@@ -38,17 +34,17 @@ def find_last_conv_layer(mdl) -> Optional[str]:
     return None
 
 
-def load_ml_model() -> None:
-    """Load model and detect Grad-CAM target layer."""
-    global model, last_conv_layer_name
+def load_ml_model() -> Tuple[Any, Optional[str]]:
+    """Load model and detect Grad-CAM target layer, raising an error if it fails."""
+    if not os.path.exists(MODEL_PATH):
+        raise RuntimeError(f"Model file not found at {MODEL_PATH}")
 
-    if os.path.exists(MODEL_PATH):
-        model = load_model(MODEL_PATH)
-        last_conv_layer_name = find_last_conv_layer(model)
-        print(f"[INFO] Model loaded. Grad-CAM target layer: {last_conv_layer_name}")
-        return
-
-    print(f"[WARNING] Model not found at {MODEL_PATH}")
+    model = load_model(MODEL_PATH)
+    dummy_input = np.zeros((1, IMAGE_SIZE[0], IMAGE_SIZE[1], 3), dtype=np.float32)
+    _ = model(dummy_input, training=False)
+    last_conv_layer_name = find_last_conv_layer(model)
+    print(f"[INFO] Model loaded. Grad-CAM target layer: {last_conv_layer_name}")
+    return model, last_conv_layer_name
 
 
 def is_supported_image_filename(name: str) -> bool:
@@ -66,13 +62,16 @@ def preprocess_image(img_bytes: bytes) -> np.ndarray:
 
 
 def generate_gradcam(
-    img_bytes: bytes, img_array: np.ndarray, pred_index: int
+    model: Any, last_conv_layer_name: Optional[str], img_bytes: bytes, img_array: np.ndarray, pred_index: int
 ) -> Optional[str]:
     """Generate a Grad-CAM heatmap overlay, save it, and return filename."""
     if model is None or last_conv_layer_name is None:
         return None
 
     try:
+        img_tensor = tf.cast(img_array, tf.float32)
+        _ = model(img_tensor, training=False)
+
         grad_model = tf.keras.models.Model(
             inputs=model.inputs,
             outputs=[model.get_layer(last_conv_layer_name).output, model.output],
@@ -110,7 +109,7 @@ def generate_gradcam(
 
 
 def run_prediction(
-    img_bytes: bytes, filename: str, patient_id: Optional[int], db: Session
+    model: Any, last_conv_layer_name: Optional[str], img_bytes: bytes, filename: str, patient_id: Optional[int], db: Session
 ) -> dict:
     """Run prediction pipeline, persist record, and return API response payload."""
     if model is None:
@@ -124,7 +123,7 @@ def run_prediction(
     label = class_labels[pred_index]
     confidence = float(preds[0][0] if label == "malignant" else 1 - preds[0][0])
 
-    heatmap_fname = generate_gradcam(img_bytes, img_array, pred_index)
+    heatmap_fname = generate_gradcam(model, last_conv_layer_name, img_bytes, img_array, pred_index)
 
     if patient_id is not None:
         patient = db.query(Patient).filter(Patient.id == patient_id).first()

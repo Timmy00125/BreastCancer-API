@@ -9,3 +9,7 @@ reportlab
 pandas
 matplotlib
 opencv-python-headless
+pydantic-settings
+pytest
+httpx
+pytest-asyncio

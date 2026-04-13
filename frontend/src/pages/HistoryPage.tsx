@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Download, RefreshCw, Clock } from "lucide-react";
 import { API } from "../api";
 
@@ -15,23 +16,16 @@ type Record = {
 };
 
 export default function HistoryPage() {
-  const [records, setRecords] = useState<Record[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "malignant" | "benign">("all");
 
-  const fetchHistory = async () => {
-    setLoading(true);
-    try {
+  const { data: records = [], isLoading: loading, refetch } = useQuery<Record[]>({
+    queryKey: ['history'],
+    queryFn: async () => {
       const res = await fetch(`${API}/history`);
-      if (res.ok) setRecords(await res.json());
-    } finally {
-      setLoading(false);
+      if (!res.ok) throw new Error("Failed to fetch history");
+      return res.json();
     }
-  };
-
-  useEffect(() => {
-    fetchHistory();
-  }, []);
+  });
 
   const filtered =
     filter === "all" ? records : records.filter((r) => r.prediction === filter);
@@ -73,7 +67,7 @@ export default function HistoryPage() {
               >
                 <Download size={13} /> Export CSV
               </a>
-              <button className="btn btn-ghost btn-sm" onClick={fetchHistory}>
+              <button className="btn btn-ghost btn-sm" onClick={() => refetch()}>
                 <RefreshCw size={13} /> Refresh
               </button>
             </div>

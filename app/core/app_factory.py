@@ -36,6 +36,8 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     def startup_model() -> None:
-        load_ml_model()
+        model, last_conv_layer_name = load_ml_model()
+        app.state.model = model
+        app.state.last_conv_layer_name = last_conv_layer_name
 
     return app

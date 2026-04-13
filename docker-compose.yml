@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./predictions.db:/app/predictions.db
+      - ./heatmaps:/app/heatmaps
+    environment:
+      - RESET_DB_ON_STARTUP=0
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend

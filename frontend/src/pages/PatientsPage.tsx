@@ -1,5 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Users, Plus, Trash2, ChevronRight, UserCircle } from "lucide-react";
 import { API } from "../api";
 
@@ -8,48 +12,72 @@ type Patient = {
   medical_history: string | null; scan_count: number; created_at: string;
 };
 
+const patientSchema = z.object({
+  name: z.string().min(1, "Full Name is required"),
+  age: z.coerce.number().min(1, "Age must be greater than 0").max(120, "Age must be realistic"),
+  medical_history: z.string().optional(),
+});
+
+type PatientFormValues = z.infer<typeof patientSchema>;
+
 export default function PatientsPage() {
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: "", age: "", medical_history: "" });
-  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const fetchPatients = async () => {
-    setLoading(true);
-    try {
+  const { data: patients = [], isLoading: loading } = useQuery<Patient[]>({
+    queryKey: ['patients'],
+    queryFn: async () => {
       const res = await fetch(`${API}/patients`);
-      if (res.ok) setPatients(await res.json());
-    } finally {
-      setLoading(false);
+      if (!res.ok) throw new Error("Failed to fetch patients");
+      return res.json();
     }
-  };
+  });
 
-  useEffect(() => { fetchPatients(); }, []);
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<PatientFormValues>({
+    resolver: zodResolver(patientSchema),
+    defaultValues: {
+      name: "",
+      medical_history: "",
+    }
+  });
 
-  const handleCreate = async () => {
-    if (!form.name || !form.age) return;
-    setSaving(true);
-    const fd = new FormData();
-    fd.append("name", form.name);
-    fd.append("age", form.age);
-    if (form.medical_history) fd.append("medical_history", form.medical_history);
-    try {
-      await fetch(`${API}/patients`, { method: "POST", body: fd });
+  const createPatientMutation = useMutation({
+    mutationFn: async (data: PatientFormValues) => {
+      const fd = new FormData();
+      fd.append("name", data.name);
+      fd.append("age", data.age.toString());
+      if (data.medical_history) fd.append("medical_history", data.medical_history);
+      
+      const res = await fetch(`${API}/patients`, { method: "POST", body: fd });
+      if (!res.ok) throw new Error("Failed to create patient");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
       setShowModal(false);
-      setForm({ name: "", age: "", medical_history: "" });
-      fetchPatients();
-    } finally {
-      setSaving(false);
+      reset();
     }
+  });
+
+  const deletePatientMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`${API}/patients/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete patient");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+    }
+  });
+
+  const onSubmit = (data: PatientFormValues) => {
+    createPatientMutation.mutate(data);
   };
 
-  const handleDelete = async (id: number, e: React.MouseEvent) => {
+  const handleDelete = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm("Delete this patient and all their scans?")) return;
-    await fetch(`${API}/patients/${id}`, { method: "DELETE" });
-    fetchPatients();
+    deletePatientMutation.mutate(id);
   };
 
   const initials = (name: string) => name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
@@ -113,29 +141,34 @@ export default function PatientsPage() {
 
       {/* Create Patient Modal */}
       {showModal && (
-        <div className="modal-backdrop" onClick={() => setShowModal(false)}>
+        <div className="modal-backdrop" onClick={() => { setShowModal(false); reset(); }}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <p className="modal-title"><Plus size={16} />New Patient</p>
-            <div className="stack stack-md">
-              <div className="form-group">
-                <label className="form-label">Full Name *</label>
-                <input className="form-input" placeholder="e.g. Jane Doe" value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} />
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <div className="stack stack-md">
+                <div className="form-group">
+                  <label className="form-label">Full Name *</label>
+                  <input className="form-input" placeholder="e.g. Jane Doe" {...register("name")} />
+                  {errors.name && <span style={{ color: "var(--malignant)", fontSize: 12 }}>{errors.name.message}</span>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Age *</label>
+                  <input className="form-input" type="number" placeholder="e.g. 45" {...register("age")} />
+                  {errors.age && <span style={{ color: "var(--malignant)", fontSize: 12 }}>{errors.age.message}</span>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Medical History</label>
+                  <textarea className="form-textarea" placeholder="e.g. Family history of breast cancer, prior biopsies..." {...register("medical_history")} />
+                  {errors.medical_history && <span style={{ color: "var(--malignant)", fontSize: 12 }}>{errors.medical_history.message}</span>}
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Age *</label>
-                <input className="form-input" type="number" placeholder="e.g. 45" min="1" max="120" value={form.age} onChange={e => setForm(f => ({...f, age: e.target.value}))} />
+              <div className="modal-actions" style={{ marginTop: 20 }}>
+                <button type="button" className="btn btn-ghost" onClick={() => { setShowModal(false); reset(); }}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? <><span className="spinner" />Saving...</> : <><Users size={14} />Create Patient</>}
+                </button>
               </div>
-              <div className="form-group">
-                <label className="form-label">Medical History</label>
-                <textarea className="form-textarea" placeholder="e.g. Family history of breast cancer, prior biopsies..." value={form.medical_history} onChange={e => setForm(f => ({...f, medical_history: e.target.value}))} />
-              </div>
-            </div>
-            <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleCreate} disabled={!form.name || !form.age || saving}>
-                {saving ? <><span className="spinner" />Saving...</> : <><Users size={14} />Create Patient</>}
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}

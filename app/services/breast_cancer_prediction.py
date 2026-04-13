@@ -1,0 +1,62 @@
+import os
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+# Suppress TensorFlow INFO and WARNING logs
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+import sys
+import numpy as np
+from tensorflow.keras.models import load_model # type: ignore
+from tensorflow.keras.preprocessing import image # type: ignore
+import tensorflow as tf
+
+IMAGE_SIZE = (150, 150)  # Match the size used during model training
+
+def get_model_path():
+    # Assuming the model file is in the root directory
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'bcd_model.h5')
+
+def load_prediction_model(app):
+    model_path = get_model_path()
+    if not os.path.exists(model_path):
+        raise RuntimeError(f"Model file not found at {model_path}")
+    
+    app.state.model = load_model(model_path)
+
+def load_and_preprocess_image(img_path, target_size):
+    img = image.load_img(img_path, target_size=target_size)
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    img_array /= 255.0
+    return img_array
+
+def predict_image_class(model, img_path, target_size=IMAGE_SIZE):
+    img = load_and_preprocess_image(img_path, target_size)
+    
+    predictions = model.predict(img)
+    
+    predicted_class = (predictions[0] > 0.5).astype("int32")
+    class_labels = ['benign', 'malignant']
+    predicted_label = class_labels[predicted_class[0]]
+    return predicted_label
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python breast_cancer_prediction.py <image_path>")
+        sys.exit(1)
+
+    img_path = sys.argv[1]
+    if not os.path.exists(img_path):
+        print(f"Image file not found at {img_path}")
+        sys.exit(1)
+
+    # In standalone mode, just load the model and predict
+    model_path = get_model_path()
+    if not os.path.exists(model_path):
+        raise RuntimeError(f"Model file not found at {model_path}")
+    
+    loaded_model = load_model(model_path)
+    predicted_label = predict_image_class(loaded_model, img_path, IMAGE_SIZE)
+    if predicted_label == "malignant":
+        print("Malignant (suffering from Breast Cancer)")
+    else:
+        print("Benign (not suffering from Breast Cancer)")

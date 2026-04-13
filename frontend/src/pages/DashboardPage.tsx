@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
   Bar,
@@ -27,22 +28,14 @@ type Analytics = {
 const PIE_COLORS = ["#34d399", "#f87171"];
 
 export default function DashboardPage() {
-  const [data, setData] = useState<Analytics | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
+  const { data, isLoading: loading, refetch } = useQuery<Analytics>({
+    queryKey: ['analytics'],
+    queryFn: async () => {
       const res = await fetch(`${API}/analytics`);
-      if (res.ok) setData(await res.json());
-    } finally {
-      setLoading(false);
+      if (!res.ok) throw new Error("Failed to fetch analytics");
+      return res.json();
     }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
+  });
 
   if (loading)
     return (
@@ -136,7 +129,7 @@ export default function DashboardPage() {
               <p className="card-title" style={{ marginBottom: 0 }}>
                 Monthly Breakdown
               </p>
-              <button className="btn btn-ghost btn-sm" onClick={fetchData}>
+              <button className="btn btn-ghost btn-sm" onClick={() => refetch()}>
                 <RefreshCw size={12} />
               </button>
             </div>

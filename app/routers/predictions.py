@@ -2,7 +2,7 @@ import io
 import zipfile
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Request
 from sqlalchemy.orm import Session
 
 from app.db.models import PredictionRecord
@@ -14,6 +14,7 @@ router = APIRouter()
 
 @router.post("/predict")
 async def predict(
+    request: Request,
     file: UploadFile = File(...),
     patient_id: Optional[int] = Form(None),
     db: Session = Depends(get_db),
@@ -22,7 +23,7 @@ async def predict(
     contents = await file.read()
     filename = file.filename or "uploaded_image"
     try:
-        return run_prediction(contents, filename, patient_id, db)
+        return run_prediction(request.app.state.model, request.app.state.last_conv_layer_name, contents, filename, patient_id, db)
     except HTTPException:
         raise
     except Exception as error:
@@ -31,6 +32,7 @@ async def predict(
 
 @router.post("/predict/batch")
 async def predict_batch(
+    request: Request,
     file: UploadFile = File(...),
     patient_id: Optional[int] = Form(None),
     db: Session = Depends(get_db),
@@ -63,7 +65,7 @@ async def predict_batch(
             for name in names:
                 try:
                     img_bytes = zip_file.read(name)
-                    result = run_prediction(img_bytes, name, patient_id, db)
+                    result = run_prediction(request.app.state.model, request.app.state.last_conv_layer_name, img_bytes, name, patient_id, db)
                     results.append(result)
                 except Exception as error:
                     errors.append({"filename": name, "error": str(error)})
