@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
@@ -25,24 +24,22 @@ type Analytics = {
   monthly_breakdown: { month: string; benign: number; malignant: number }[];
 };
 
-const PIE_COLORS = ["#34d399", "#f87171"];
+const PIE_COLORS = ["#1565C0", "#E53935"];
 
 export default function DashboardPage() {
   const { data, isLoading: loading, refetch } = useQuery<Analytics>({
-    queryKey: ['analytics'],
+    queryKey: ["analytics"],
     queryFn: async () => {
       const res = await fetch(`${API}/analytics`);
       if (!res.ok) throw new Error("Failed to fetch analytics");
       return res.json();
-    }
+    },
   });
 
   if (loading)
     return (
-      <div className="page-body">
-        <div className="empty-state" style={{ height: "60vh" }}>
-          <span className="spinner spinner-lg" />
-        </div>
+      <div className="px-8 pt-8 pb-10 flex-1 flex items-center justify-center">
+        <span className="inline-block w-9 h-9 border-3 border-bauhaus-border border-t-bauhaus-blue rounded-full animate-spin" />
       </div>
     );
   if (!data) return null;
@@ -59,139 +56,160 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="page-title">Analytics Dashboard</h1>
-        <p className="page-subtitle">
+      <div className="px-8 pt-8">
+        <h1 className="font-display font-extrabold text-3xl text-bauhaus-black tracking-tight">
+          ANALYTICS DASHBOARD
+        </h1>
+        <div className="w-16 h-1 bg-bauhaus-red mt-2 mb-1" />
+        <p className="text-bauhaus-gray text-sm font-body">
           Aggregate system metrics and prediction trends
         </p>
       </div>
 
-      <div className="page-body stack stack-lg">
-        {/* Stats row */}
-        <div className="grid-4">
-          <div className="stat-card">
-            <div className="stat-icon pink">
+      <div className="px-8 pt-5 pb-10 flex-1 flex flex-col gap-6">
+        <div className="grid grid-cols-4 gap-4">
+          <div className="bg-white border-2 border-bauhaus-black p-5 flex flex-col gap-3 border-t-4 border-t-bauhaus-yellow">
+            <div className="w-10 h-10 flex items-center justify-center bg-bauhaus-yellow/20 text-bauhaus-black">
               <ScanIcon size={18} />
             </div>
             <div>
-              <div className="stat-label">Total Scans</div>
-              <div className="stat-value">{data.total_scans}</div>
-              <div className="stat-sub">All time</div>
+              <div className="text-[11px] font-body font-bold tracking-wider uppercase text-bauhaus-gray">
+                Total Scans
+              </div>
+              <div className="font-display font-extrabold text-[28px] text-bauhaus-black tracking-tight leading-none mt-1">
+                {data.total_scans}
+              </div>
+              <div className="text-[11px] text-bauhaus-gray font-body mt-1">
+                All time
+              </div>
             </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-icon violet">
+          <div className="bg-white border-2 border-bauhaus-black p-5 flex flex-col gap-3 border-t-4 border-t-bauhaus-blue">
+            <div className="w-10 h-10 flex items-center justify-center bg-bauhaus-blue/10 text-bauhaus-blue">
               <Users size={18} />
             </div>
             <div>
-              <div className="stat-label">Patients</div>
-              <div className="stat-value">{data.total_patients}</div>
-              <div className="stat-sub">Registered</div>
+              <div className="text-[11px] font-body font-bold tracking-wider uppercase text-bauhaus-gray">
+                Patients
+              </div>
+              <div className="font-display font-extrabold text-[28px] text-bauhaus-black tracking-tight leading-none mt-1">
+                {data.total_patients}
+              </div>
+              <div className="text-[11px] text-bauhaus-gray font-body mt-1">
+                Registered
+              </div>
             </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-icon red">
+          <div className="bg-white border-2 border-bauhaus-black p-5 flex flex-col gap-3 border-t-4 border-t-bauhaus-red">
+            <div className="w-10 h-10 flex items-center justify-center bg-bauhaus-red/10 text-bauhaus-red">
               <TrendingUp size={18} />
             </div>
             <div>
-              <div className="stat-label">Malignant Rate</div>
-              <div className="stat-value" style={{ color: "var(--malignant)" }}>
+              <div className="text-[11px] font-body font-bold tracking-wider uppercase text-bauhaus-gray">
+                Malignant Rate
+              </div>
+              <div className="font-display font-extrabold text-[28px] text-bauhaus-red tracking-tight leading-none mt-1">
                 {malignantRate}%
               </div>
-              <div className="stat-sub">{data.malignant_count} cases</div>
+              <div className="text-[11px] text-bauhaus-gray font-body mt-1">
+                {data.malignant_count} cases
+              </div>
             </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-icon teal">
+          <div className="bg-white border-2 border-bauhaus-black p-5 flex flex-col gap-3 border-t-4 border-t-[#34D399]">
+            <div className="w-10 h-10 flex items-center justify-center bg-[#34D399]/10 text-[#34D399]">
               <Activity size={18} />
             </div>
             <div>
-              <div className="stat-label">Avg. Confidence</div>
-              <div className="stat-value">
+              <div className="text-[11px] font-body font-bold tracking-wider uppercase text-bauhaus-gray">
+                Avg. Confidence
+              </div>
+              <div className="font-display font-extrabold text-[28px] text-bauhaus-black tracking-tight leading-none mt-1">
                 {data.average_confidence.toFixed(1)}%
               </div>
-              <div className="stat-sub">Model certainty</div>
+              <div className="text-[11px] text-bauhaus-gray font-body mt-1">
+                Model certainty
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid-2">
-          {/* Bar Chart */}
-          <div className="card">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 20,
-              }}
-            >
-              <p className="card-title" style={{ marginBottom: 0 }}>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white border-2 border-bauhaus-black p-6">
+            <div className="flex justify-between items-center mb-5">
+              <p className="font-display font-bold text-bauhaus-black text-[13px]">
                 Monthly Breakdown
               </p>
-              <button className="btn btn-ghost btn-sm" onClick={() => refetch()}>
+              <button
+                className="inline-flex items-center px-2 py-1 bg-transparent border-2 border-bauhaus-black text-bauhaus-black font-body font-bold text-[11px] hover:bg-bauhaus-yellow transition-all"
+                onClick={() => refetch()}
+              >
                 <RefreshCw size={12} />
               </button>
             </div>
             {data.monthly_breakdown.length === 0 ? (
-              <div className="empty-state" style={{ padding: 40 }}>
-                <Activity size={30} style={{ opacity: 0.3 }} />
-                <p className="empty-state-title">No data yet</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <Activity size={30} className="text-bauhaus-border" />
+                <p className="font-display font-bold text-bauhaus-gray text-[14px] mt-2">
+                  No data yet
+                </p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={data.monthly_breakdown} barGap={4}>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="rgba(255,255,255,0.05)"
+                    stroke="rgba(0,0,0,0.08)"
                   />
                   <XAxis
                     dataKey="month"
-                    tick={{ fill: "#475569", fontSize: 11 }}
-                    axisLine={false}
+                    tick={{ fill: "#6B6B63", fontSize: 11 }}
+                    axisLine={{ stroke: "#D4D4CF" }}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fill: "#475569", fontSize: 11 }}
-                    axisLine={false}
+                    tick={{ fill: "#6B6B63", fontSize: 11 }}
+                    axisLine={{ stroke: "#D4D4CF" }}
                     tickLine={false}
                     allowDecimals={false}
                   />
                   <Tooltip
                     contentStyle={{
-                      background: "#161929",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: 8,
-                      color: "#f1f5f9",
+                      background: "#FFFFFF",
+                      border: "2px solid #000000",
+                      borderRadius: 0,
+                      color: "#000000",
+                      fontFamily: '"Plus Jakarta Sans", sans-serif',
                     }}
-                    cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                    cursor={{ fill: "rgba(0,0,0,0.03)" }}
                   />
                   <Bar
                     dataKey="benign"
                     name="Benign"
-                    fill="#34d399"
-                    radius={[4, 4, 0, 0]}
+                    fill="#1565C0"
+                    radius={[0, 0, 0, 0]}
                   />
                   <Bar
                     dataKey="malignant"
                     name="Malignant"
-                    fill="#f87171"
-                    radius={[4, 4, 0, 0]}
+                    fill="#E53935"
+                    radius={[0, 0, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </div>
 
-          {/* Pie Chart */}
-          <div className="card">
-            <p className="card-title" style={{ marginBottom: 20 }}>
+          <div className="bg-white border-2 border-bauhaus-black p-6">
+            <p className="font-display font-bold text-bauhaus-black text-[13px] mb-5">
               Diagnosis Distribution
             </p>
             {data.total_scans === 0 ? (
-              <div className="empty-state" style={{ padding: 40 }}>
-                <Activity size={30} style={{ opacity: 0.3 }} />
-                <p className="empty-state-title">No scans yet</p>
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <Activity size={30} className="text-bauhaus-border" />
+                <p className="font-display font-bold text-bauhaus-gray text-[14px] mt-2">
+                  No scans yet
+                </p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={240}>
@@ -215,17 +233,18 @@ export default function DashboardPage() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      background: "#161929",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: 8,
-                      color: "#f1f5f9",
+                      background: "#FFFFFF",
+                      border: "2px solid #000000",
+                      borderRadius: 0,
+                      color: "#000000",
+                      fontFamily: '"Plus Jakarta Sans", sans-serif',
                     }}
                   />
                   <Legend
                     iconType="circle"
                     iconSize={10}
                     formatter={(v) => (
-                      <span style={{ color: "#94a3b8", fontSize: 13 }}>
+                      <span className="text-[13px] font-body text-bauhaus-gray">
                         {v}
                       </span>
                     )}
@@ -234,76 +253,26 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             )}
 
-            {/* Summary rows */}
-            <div
-              style={{
-                marginTop: 12,
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      background: "var(--benign)",
-                    }}
-                  />
-                  <span
-                    style={{ fontSize: 13, color: "var(--text-secondary)" }}
-                  >
+            <div className="mt-3 flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 bg-bauhaus-blue" />
+                  <span className="text-[13px] font-body text-bauhaus-gray">
                     Benign
                   </span>
                 </div>
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "var(--benign)",
-                  }}
-                >
+                <span className="text-[13px] font-body font-bold text-bauhaus-blue">
                   {data.benign_count}
                 </span>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      background: "var(--malignant)",
-                    }}
-                  />
-                  <span
-                    style={{ fontSize: 13, color: "var(--text-secondary)" }}
-                  >
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 bg-bauhaus-red" />
+                  <span className="text-[13px] font-body text-bauhaus-gray">
                     Malignant
                   </span>
                 </div>
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "var(--malignant)",
-                  }}
-                >
+                <span className="text-[13px] font-body font-bold text-bauhaus-red">
                   {data.malignant_count}
                 </span>
               </div>
@@ -311,45 +280,35 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Confidence gauge-style card */}
-        <div className="card">
-          <p className="card-title">Average Model Confidence</p>
-          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-            <div style={{ flex: 1 }}>
-              <div className="confidence-bar-wrap">
-                <div className="confidence-bar-header">
-                  <span className="confidence-bar-label">Confidence</span>
-                  <span className="confidence-bar-value">
+        <div className="bg-white border-2 border-bauhaus-black p-6">
+          <p className="font-display font-bold text-bauhaus-black text-[13px]">
+            Average Model Confidence
+          </p>
+          <div className="flex items-center gap-6 mt-3">
+            <div className="flex-1">
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between">
+                  <span className="text-[12px] font-body text-bauhaus-gray">
+                    Confidence
+                  </span>
+                  <span className="text-[12px] font-body font-bold text-bauhaus-black">
                     {data.average_confidence.toFixed(2)}%
                   </span>
                 </div>
-                <div className="confidence-bar-track" style={{ height: 10 }}>
+                <div className="h-2.5 bg-bauhaus-surface border border-bauhaus-black/10 overflow-hidden">
                   <div
-                    className="confidence-bar-fill"
+                    className="h-full bg-bauhaus-black transition-all"
                     style={{ width: `${data.average_confidence}%` }}
                   />
                 </div>
               </div>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div
-                style={{
-                  fontSize: 36,
-                  fontWeight: 800,
-                  color: "var(--accent-pink)",
-                  letterSpacing: -2,
-                }}
-              >
+            <div className="text-right">
+              <div className="font-display font-extrabold text-[36px] text-bauhaus-red tracking-tighter leading-none">
                 {data.average_confidence.toFixed(1)}
-                <span style={{ fontSize: 18 }}>%</span>
+                <span className="text-[18px]">%</span>
               </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                  marginTop: 2,
-                }}
-              >
+              <div className="text-[11px] text-bauhaus-gray font-body mt-1">
                 across {data.total_scans} scans
               </div>
             </div>
@@ -360,7 +319,6 @@ export default function DashboardPage() {
   );
 }
 
-// inline icon shim (lucide Scan isn't always available)
 function ScanIcon({ size }: { size: number }) {
   return (
     <svg

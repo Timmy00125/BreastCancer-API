@@ -81,8 +81,9 @@ export default function PredictPage() {
       if (!res.ok) throw new Error(data.detail || "Prediction failed");
       if (tab === "single") setResult(data);
       else setBatchResult(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Prediction failed";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -100,22 +101,25 @@ export default function PredictPage() {
 
   return (
     <>
-      <div className="page-header">
-        <h1 className="page-title">New Scan</h1>
-        <p className="page-subtitle">
+      <div className="px-8 pt-8">
+        <h1 className="font-display font-extrabold text-3xl text-bauhaus-black tracking-tight">
+          NEW SCAN
+        </h1>
+        <div className="w-16 h-1 bg-bauhaus-red mt-2 mb-1" />
+        <p className="text-bauhaus-gray text-sm font-body">
           Upload a mammography or histology image for AI-powered breast cancer
           prediction
         </p>
       </div>
 
-      <div className="page-body">
-        {/* Tabs */}
-        <div
-          className="tabs"
-          style={{ marginBottom: 20, width: "fit-content" }}
-        >
+      <div className="px-8 pt-5 pb-10 flex-1">
+        <div className="flex gap-3 mb-6 w-fit bg-white border-2 border-bauhaus-black">
           <button
-            className={`tab-btn${tab === "single" ? " active" : ""}`}
+            className={`px-4 py-2 font-body font-bold text-[13px] transition-all ${
+              tab === "single"
+                ? "bg-bauhaus-black text-white"
+                : "bg-white text-bauhaus-gray hover:text-bauhaus-black"
+            }`}
             onClick={() => {
               setTab("single");
               clearFile();
@@ -128,7 +132,11 @@ export default function PredictPage() {
             Single Image
           </button>
           <button
-            className={`tab-btn${tab === "batch" ? " active" : ""}`}
+            className={`px-4 py-2 font-body font-bold text-[13px] transition-all ${
+              tab === "batch"
+                ? "bg-bauhaus-black text-white"
+                : "bg-white text-bauhaus-gray hover:text-bauhaus-black"
+            }`}
             onClick={() => {
               setTab("batch");
               clearFile();
@@ -139,13 +147,15 @@ export default function PredictPage() {
           </button>
         </div>
 
-        <div className="grid-2" style={{ gap: 24 }}>
-          {/* Left: Upload */}
-          <div className="stack stack-md">
-            <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-              {/* Upload zone */}
+        <div className="grid grid-cols-2 gap-6">
+          <div className="flex flex-col gap-4">
+            <div className="bg-white border-2 border-bauhaus-black overflow-hidden">
               <div
-                className={`upload-zone${dragging ? " dragging" : ""}`}
+                className={`flex flex-col items-center justify-center gap-3 p-10 cursor-pointer transition-all ${
+                  dragging
+                    ? "border-2 border-bauhaus-yellow bg-bauhaus-yellow/5"
+                    : "border-2 border-dashed border-bauhaus-black/30"
+                }`}
                 style={{ margin: 20, marginBottom: file ? 12 : 20 }}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -162,21 +172,26 @@ export default function PredictPage() {
                   onChange={(e) =>
                     e.target.files?.[0] && onFile(e.target.files[0])
                   }
+                  className="hidden"
                 />
-                <div className="upload-zone-icon">
+                <div
+                  className={`w-14 h-14 flex items-center justify-center ${
+                    dragging ? "bg-bauhaus-yellow" : "bg-bauhaus-black/5"
+                  }`}
+                >
                   {tab === "batch" ? (
-                    <Archive size={24} />
+                    <Archive size={24} className="text-bauhaus-black" />
                   ) : (
-                    <Upload size={24} />
+                    <Upload size={24} className="text-bauhaus-black" />
                   )}
                 </div>
-                <div>
-                  <p className="upload-zone-title">
+                <div className="text-center">
+                  <p className="font-display font-bold text-bauhaus-black text-[15px]">
                     {tab === "single"
                       ? "Drop your image here"
                       : "Drop a ZIP archive here"}
                   </p>
-                  <p className="upload-zone-sub">
+                  <p className="text-[12px] text-bauhaus-gray font-body mt-1">
                     {tab === "single"
                       ? "PNG, JPG, TIFF — max 50MB"
                       : ".zip file containing image files"}
@@ -184,54 +199,22 @@ export default function PredictPage() {
                 </div>
               </div>
 
-              {/* File preview */}
               {file && (
-                <div style={{ padding: "0 20px 20px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "10px 14px",
-                      background: "var(--bg-base)",
-                      borderRadius: "var(--radius-sm)",
-                      border: "1px solid var(--border)",
-                    }}
-                  >
+                <div className="px-5 pb-5">
+                  <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-bauhaus-surface border-2 border-bauhaus-black">
                     <FileImage
                       size={16}
-                      style={{ color: "var(--accent-pink)", flexShrink: 0 }}
+                      className="text-bauhaus-red flex-shrink-0"
                     />
-                    <span
-                      style={{
-                        fontSize: 13,
-                        color: "var(--text-primary)",
-                        flex: 1,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
+                    <span className="text-[13px] text-bauhaus-black font-body font-medium flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
                       {file.name}
                     </span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: "var(--text-muted)",
-                        flexShrink: 0,
-                      }}
-                    >
+                    <span className="text-[11px] text-bauhaus-gray font-body flex-shrink-0">
                       {(file.size / 1024).toFixed(0)} KB
                     </span>
                     <button
                       onClick={clearFile}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "var(--text-muted)",
-                        display: "flex",
-                      }}
+                      className="bg-transparent border-none cursor-pointer text-bauhaus-gray hover:text-bauhaus-red transition-colors flex"
                     >
                       <X size={14} />
                     </button>
@@ -240,26 +223,20 @@ export default function PredictPage() {
               )}
             </div>
 
-            {/* Patient selector */}
-            <div className="card">
-              <p className="card-title">
-                <Users size={15} />
-                Link to Patient{" "}
-                <span
-                  style={{
-                    marginLeft: "auto",
-                    fontSize: 11,
-                    color: "var(--text-muted)",
-                    fontWeight: 400,
-                  }}
-                >
+            <div className="bg-white border-2 border-bauhaus-black p-6">
+              <p className="font-display font-bold text-bauhaus-black text-[13px] mb-4 flex items-center gap-2">
+                <Users size={15} className="text-bauhaus-blue" />
+                Link to Patient
+                <span className="ml-auto text-[11px] text-bauhaus-gray font-body font-normal">
                   optional
                 </span>
               </p>
-              <div className="form-group">
-                <label className="form-label">Patient ID</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-body font-bold tracking-wider uppercase text-bauhaus-gray">
+                  Patient ID
+                </label>
                 <input
-                  className="form-input"
+                  className="bg-bauhaus-surface border-2 border-bauhaus-black text-bauhaus-black text-[14px] font-body px-3.5 py-2.5 focus:outline-none focus:border-bauhaus-blue transition-colors w-full"
                   placeholder="e.g. 3"
                   value={patientId}
                   onChange={(e) => setPatientId(e.target.value)}
@@ -270,19 +247,22 @@ export default function PredictPage() {
             </div>
 
             {error && (
-              <div className="alert alert-error">
+              <div className="flex items-center gap-2 px-4 py-3 bg-bauhaus-red/10 border-2 border-bauhaus-red text-bauhaus-red font-body text-[13px]">
                 <AlertTriangle size={15} /> {error}
               </div>
             )}
 
             <button
-              className="btn btn-primary btn-lg"
+              className="inline-flex items-center gap-2 px-5 py-3 bg-bauhaus-black text-white font-display font-bold text-[14px] tracking-wide border-2 border-bauhaus-black transition-all hover:bg-bauhaus-blue hover:border-bauhaus-blue disabled:opacity-40 disabled:cursor-not-allowed"
               onClick={handleSubmit}
               disabled={!file || loading}
             >
               {loading ? (
                 <>
-                  <span className="spinner" /> Analyzing...
+                  <span
+                    className="inline-block w-[18px] h-[18px] border-2 border-white/30 border-t-white rounded-full animate-spin"
+                    />
+                  Analyzing...
                 </>
               ) : (
                 <>
@@ -292,34 +272,47 @@ export default function PredictPage() {
             </button>
           </div>
 
-          {/* Right: Results */}
-          <div className="stack stack-md">
-            {/* Image Preview */}
+          <div className="flex flex-col gap-4">
             {preview && (
-              <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+              <div className="bg-white border-2 border-bauhaus-black overflow-hidden">
                 <img
                   src={preview}
                   alt="Preview"
-                  style={{
-                    width: "100%",
-                    display: "block",
-                    maxHeight: 260,
-                    objectFit: "cover",
-                  }}
+                  className="w-full block max-h-[260px] object-cover"
                 />
               </div>
             )}
 
-            {/* Single result */}
             {result && (
               <>
-                <div className={`result-banner ${result.prediction}`}>
-                  <div className="result-banner-icon">
-                    {result.prediction === "malignant" ? "⚠️" : "✅"}
+                <div
+                  className={`border-2 p-5 flex items-center gap-4 ${
+                    result.prediction === "malignant"
+                      ? "bg-bauhaus-red/10 border-bauhaus-red"
+                      : "bg-bauhaus-blue/10 border-bauhaus-blue"
+                  }`}
+                >
+                  <div
+                    className={`w-12 h-12 flex items-center justify-center flex-shrink-0 text-[22px] ${
+                      result.prediction === "malignant"
+                        ? "bg-bauhaus-red/20 text-bauhaus-red"
+                        : "bg-bauhaus-blue/20 text-bauhaus-blue"
+                    }`}
+                    style={{ borderRadius: 0 }}
+                  >
+                    {result.prediction === "malignant" ? "⚠" : "✓"}
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <p className="result-banner-label">AI Diagnosis</p>
-                    <p className="result-banner-value">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-body font-bold tracking-widest uppercase text-bauhaus-gray">
+                      AI Diagnosis
+                    </p>
+                    <p
+                      className={`font-display font-extrabold text-[22px] tracking-tight mt-0.5 ${
+                        result.prediction === "malignant"
+                          ? "text-bauhaus-red"
+                          : "text-bauhaus-blue"
+                      }`}
+                    >
                       {result.prediction.toUpperCase()}
                     </p>
                   </div>
@@ -327,50 +320,40 @@ export default function PredictPage() {
                     href={`${API}/export/pdf/${result.id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn btn-ghost btn-sm"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-transparent border-2 border-bauhaus-black text-bauhaus-black font-body font-bold text-[12px] hover:bg-bauhaus-yellow hover:border-bauhaus-yellow transition-all"
                   >
                     <Download size={13} /> PDF
                   </a>
                 </div>
 
-                <div className="card">
-                  <p className="card-title">Confidence Score</p>
-                  <div className="confidence-bar-wrap">
-                    <div className="confidence-bar-header">
-                      <span className="confidence-bar-label">
+                <div className="bg-white border-2 border-bauhaus-black p-6">
+                  <p className="font-display font-bold text-bauhaus-black text-[13px] mb-3">
+                    Confidence Score
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between">
+                      <span className="text-[12px] font-body text-bauhaus-gray">
                         {result.prediction}
                       </span>
-                      <span className="confidence-bar-value">
+                      <span className="text-[12px] font-body font-bold text-bauhaus-black">
                         {(result.confidence * 100).toFixed(1)}%
                       </span>
                     </div>
-                    <div className="confidence-bar-track">
+                    <div className="h-2 bg-bauhaus-surface border border-bauhaus-black/10 overflow-hidden">
                       <div
-                        className="confidence-bar-fill"
-                        style={{ width: `${result.confidence * 100}%` }}
+                        className="h-full bg-bauhaus-black transition-all duration-700"
+                        style={{
+                          width: `${result.confidence * 100}%`,
+                        }}
                       />
                     </div>
                   </div>
-                  <div
-                    style={{
-                      marginTop: 12,
-                      display: "flex",
-                      gap: 8,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span className="badge badge-version">
+                  <div className="mt-3 flex gap-2 flex-wrap">
+                    <span className="inline-flex items-center px-2.5 py-1 bg-bauhaus-yellow text-bauhaus-black font-body font-bold text-[10px] tracking-wider uppercase border-2 border-bauhaus-black">
                       {result.model_version}
                     </span>
                     {result.patient_id && (
-                      <span
-                        className="badge"
-                        style={{
-                          background: "rgba(168,85,247,0.1)",
-                          color: "var(--accent-violet)",
-                          border: "1px solid rgba(168,85,247,0.2)",
-                        }}
-                      >
+                      <span className="inline-flex items-center px-2.5 py-1 bg-bauhaus-blue text-white font-body font-bold text-[10px] tracking-wider uppercase border-2 border-bauhaus-blue">
                         Patient #{result.patient_id}
                       </span>
                     )}
@@ -378,126 +361,88 @@ export default function PredictPage() {
                 </div>
 
                 {result.heatmap_url && (
-                  <div className="card">
-                    <p className="card-title">Grad-CAM Heatmap</p>
-                    <p
-                      style={{
-                        fontSize: 12,
-                        color: "var(--text-muted)",
-                        marginBottom: 12,
-                      }}
-                    >
+                  <div className="bg-white border-2 border-bauhaus-black p-6">
+                    <p className="font-display font-bold text-bauhaus-black text-[13px]">
+                      Grad-CAM Heatmap
+                    </p>
+                    <p className="text-[12px] text-bauhaus-gray font-body mt-1 mb-3">
                       Warmer regions (red/yellow) indicate where the model
                       focused most when making its prediction.
                     </p>
-                    <div className="heatmap-container">
+                    <div className="relative border-2 border-bauhaus-black overflow-hidden">
                       <img
                         src={`${API}${result.heatmap_url}`}
                         alt="Grad-CAM Heatmap"
+                        className="w-full block"
                       />
-                      <span className="heatmap-badge">Grad-CAM XAI</span>
+                      <span className="absolute bottom-2 left-2 bg-bauhaus-black text-bauhaus-yellow font-body font-bold text-[10px] tracking-wider uppercase px-2 py-1 border border-bauhaus-yellow">
+                        Grad-CAM XAI
+                      </span>
                     </div>
                   </div>
                 )}
               </>
             )}
 
-            {/* Batch result */}
             {batchResult && (
-              <div className="card">
-                <p className="card-title">
-                  <Archive size={15} />
+              <div className="bg-white border-2 border-bauhaus-black p-6">
+                <p className="font-display font-bold text-bauhaus-black text-[13px] flex items-center gap-2">
+                  <Archive size={15} className="text-bauhaus-blue" />
                   Batch Results
                 </p>
-                <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-                  <div style={{ textAlign: "center" }}>
-                    <div
-                      style={{
-                        fontSize: 24,
-                        fontWeight: 700,
-                        color: "var(--text-primary)",
-                      }}
-                    >
+                <div className="flex gap-6 mt-4 mb-4">
+                  <div className="text-center">
+                    <div className="font-display font-extrabold text-2xl text-bauhaus-black">
                       {batchResult.total}
                     </div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    <div className="text-[11px] text-bauhaus-gray font-body uppercase tracking-wider">
                       Total
                     </div>
                   </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div
-                      style={{
-                        fontSize: 24,
-                        fontWeight: 700,
-                        color: "var(--benign)",
-                      }}
-                    >
+                  <div className="text-center">
+                    <div className="font-display font-extrabold text-2xl text-bauhaus-blue">
                       {batchResult.succeeded}
                     </div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    <div className="text-[11px] text-bauhaus-gray font-body uppercase tracking-wider">
                       OK
                     </div>
                   </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div
-                      style={{
-                        fontSize: 24,
-                        fontWeight: 700,
-                        color: "var(--malignant)",
-                      }}
-                    >
+                  <div className="text-center">
+                    <div className="font-display font-extrabold text-2xl text-bauhaus-red">
                       {batchResult.failed}
                     </div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    <div className="text-[11px] text-bauhaus-gray font-body uppercase tracking-wider">
                       Failed
                     </div>
                   </div>
                 </div>
-                <div style={{ maxHeight: 300, overflowY: "auto" }}>
+                <div className="max-h-[300px] overflow-y-auto">
                   {batchResult.results.map((r) => (
                     <div
                       key={r.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "8px 0",
-                        borderBottom: "1px solid var(--border)",
-                      }}
+                      className="flex items-center justify-between py-2 border-b border-bauhaus-border last:border-b-0"
                     >
-                      <span
-                        style={{
-                          fontSize: 12,
-                          color: "var(--text-secondary)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          maxWidth: "55%",
-                        }}
-                      >
+                      <span className="text-[12px] text-bauhaus-gray font-body overflow-hidden text-ellipsis whitespace-nowrap max-w-[55%]">
                         {r.filename}
                       </span>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 8,
-                          alignItems: "center",
-                        }}
-                      >
-                        <span className={`badge badge-${r.prediction}`}>
+                      <div className="flex gap-2 items-center">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 font-body font-bold text-[10px] tracking-wider uppercase border-2 ${
+                            r.prediction === "malignant"
+                              ? "bg-bauhaus-red text-white border-bauhaus-red"
+                              : "bg-bauhaus-blue text-white border-bauhaus-blue"
+                          }`}
+                        >
                           {r.prediction}
                         </span>
-                        <span
-                          style={{ fontSize: 12, color: "var(--text-muted)" }}
-                        >
+                        <span className="text-[12px] text-bauhaus-gray font-body">
                           {(r.confidence * 100).toFixed(0)}%
                         </span>
                         <a
                           href={`${API}/export/pdf/${r.id}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="btn btn-ghost btn-sm"
-                          style={{ padding: "3px 8px" }}
+                          className="inline-flex items-center px-1.5 py-0.5 bg-transparent border-2 border-bauhaus-black text-bauhaus-black font-body font-bold text-[11px] hover:bg-bauhaus-yellow transition-all"
                         >
                           <Download size={11} />
                         </a>
@@ -506,12 +451,11 @@ export default function PredictPage() {
                   ))}
                 </div>
                 {batchResult.errors.length > 0 && (
-                  <div style={{ marginTop: 10 }}>
+                  <div className="mt-3">
                     {batchResult.errors.map((e, i) => (
                       <div
                         key={i}
-                        className="alert alert-error"
-                        style={{ marginTop: 4, fontSize: 12 }}
+                        className="flex items-center gap-2 px-3 py-2 bg-bauhaus-red/10 border-2 border-bauhaus-red text-bauhaus-red font-body text-[12px] mt-1"
                       >
                         <AlertTriangle size={12} /> {e.filename}: {e.error}
                       </div>
@@ -522,11 +466,13 @@ export default function PredictPage() {
             )}
 
             {!result && !batchResult && !loading && (
-              <div className="card">
-                <div className="empty-state">
-                  <FileImage />
-                  <p className="empty-state-title">Awaiting scan</p>
-                  <p className="empty-state-sub">
+              <div className="bg-white border-2 border-bauhaus-black p-6">
+                <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                  <FileImage className="text-bauhaus-border" size={40} />
+                  <p className="font-display font-bold text-bauhaus-gray text-[14px]">
+                    Awaiting scan
+                  </p>
+                  <p className="text-[12px] text-bauhaus-gray font-body">
                     Upload an image and click "Run Prediction" to see results
                     here
                   </p>
@@ -535,11 +481,15 @@ export default function PredictPage() {
             )}
 
             {loading && (
-              <div className="card">
-                <div className="empty-state">
-                  <span className="spinner spinner-lg animate-pulse" />
-                  <p className="empty-state-title">Analysing image...</p>
-                  <p className="empty-state-sub">
+              <div className="bg-white border-2 border-bauhaus-black p-6">
+                <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                  <span
+                    className="inline-block w-9 h-9 border-3 border-bauhaus-border border-t-bauhaus-red rounded-full animate-spin"
+                  />
+                  <p className="font-display font-bold text-bauhaus-black text-[14px]">
+                    Analysing image...
+                  </p>
+                  <p className="text-[12px] text-bauhaus-gray font-body">
                     Generating prediction and Grad-CAM heatmap
                   </p>
                 </div>
